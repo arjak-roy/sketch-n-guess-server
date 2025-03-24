@@ -1,8 +1,6 @@
 // const socketId = require('../Models/socketId');
 // const room = require('../Models/room');
 const getrandom = require('../services/word-dictionary').giveRandomWord;
-const { json } = require('express');
-
 //*importing socketIo from app.js
 const io = require('../app').io;
 
