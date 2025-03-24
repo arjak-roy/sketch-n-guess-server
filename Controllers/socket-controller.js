@@ -1,6 +1,11 @@
 // const socketId = require('../Models/socketId');
 // const room = require('../Models/room');
+<<<<<<< HEAD
 const getrandom = require('../services/word-dictionary').giveRandomWord;
+=======
+const { json } = require('express');
+
+>>>>>>> 2590916ba6722a41c7cd1166abbd55f5a1c94d33
 //*importing socketIo from app.js
 const io = require('../app').io;
 
