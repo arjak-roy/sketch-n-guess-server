@@ -1,11 +1,6 @@
 // const socketId = require('../Models/socketId');
 // const room = require('../Models/room');
-<<<<<<< HEAD
 const getrandom = require('../services/word-dictionary').giveRandomWord;
-=======
-const { json } = require('express');
-
->>>>>>> 2590916ba6722a41c7cd1166abbd55f5a1c94d33
 //*importing socketIo from app.js
 const io = require('../app').io;
 
@@ -15,6 +10,7 @@ const rooms = {};//stores the rooms members
 const roomState = {}; //max room current canvas data
 const roomGameEngine = {};//stores the game data
 const usernamesbyRoom = {};
+
 /*
 {
     roomName : {
@@ -101,28 +97,62 @@ exports.socketController = () => {
             else{
                 io.to(assignedRoom).emit('gamemessage','Waiting for more players');
             }
-    
             //if game is active
             if(roomGameEngine[assignedRoom]['isGameActive'] === true && rooms[assignedRoom].length === 2){
                 //initilizing game
                 socket.to(assignedRoom).emit('gamemessage',`Game has started in ${assignedRoom}`);
                 roomGameEngine[assignedRoom]['currentTurn'] = usernamesbyRoom[assignedRoom][0];
                 roomGameEngine[assignedRoom]['roomMembers'] = usernamesbyRoom[assignedRoom];
-                roomGameEngine[assignedRoom]['currentWord'] = getrandom();
-                io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
+                //TODO: we will make an event here "sendWordChoices" to the currentTurn socket. It will have a list of three words.
+                //TODO: in client side we will render the AboutDialog widget to get the word.
+                
+                io.to(assignedRoom).emit('sendWordChoices',{
+                    currentTurn : roomGameEngine[assignedRoom]['currentTurn'],
+                    wordChoices : [getrandom(),getrandom(),getrandom()]
+                });
+                socket.on('wordChosen',(datafromclient)=>{
+                    console.log(datafromclient);
+                        var json = JSON.parse(datafromclient);
+                        roomGameEngine[assignedRoom]['currentWord'] = json.wordChosen;
+                        io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
+                    });
+                    
+                // roomGameEngine[assignedRoom]['currentWord'] = getrandom();
+                // io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
                 //Continueing game
                 socket.on('timeoutForSocket',(datafromclient)=>{
                     var json = JSON.parse(datafromclient);
                     // console.log(`Socket timeout:${json.currentTurn}`);
                     roomGameEngine[assignedRoom]['currentTurn'] = usernamesbyRoom[assignedRoom][(usernamesbyRoom[assignedRoom].indexOf(json.currentTurn) + 1) % usernamesbyRoom[assignedRoom].length];
                     roomGameEngine[assignedRoom]['roomMembers'] = usernamesbyRoom[assignedRoom];
-                    roomGameEngine[assignedRoom]['currentWord'] = getrandom();
+                    //TODO: we will make an event here "sendWordChoices" to the currentTurn socket. It will have a list of three words.
+                    //TODO: in client side we will render the AboutDialog widget to get the word.
+                    
+                    
+                    io.to(assignedRoom).emit('sendWordChoices',{
+                        currentTurn : roomGameEngine[assignedRoom]['currentTurn'],
+                        wordChoices : [getrandom(),getrandom(),getrandom()]
+                    });
+                    // socket.on('wordChosen',(datafromclient)=>{
+                        //     console.log(datafromclient);
+                        //     var json = JSON.parse(datafromclient);
+                        //     roomGameEngine[assignedRoom]['currentWord'] = json.wordChosen;
+                        //     io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
+                        // });
+                        
+                        // roomGameEngine[assignedRoom]['currentWord'] = getrandom();
+                        // io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
+                        
+                    })
+                }
+                socket.on('wordChosen',(datafromclient)=>{
+                    console.log(datafromclient);
+                    var json = JSON.parse(datafromclient);
+                    roomGameEngine[assignedRoom]['currentWord'] = json.wordChosen;
                     io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
-    
-                })
-            }
-            //guessedWord
-            socket.on('correctguess',(datafromclient)=>{
+                });
+                //guessedWord
+                socket.on('correctguess',(datafromclient)=>{
                 var json = JSON.parse(datafromclient);
                 io.to(assignedRoom).emit("wordGuessedBySocket", json);
             });
