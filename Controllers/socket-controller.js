@@ -12,6 +12,22 @@ const roomGameEngine = {};//stores the game data
 const usernamesbyRoom = {};//sotres user name to room (not used)
 const currentScore = {};//stores the current score of a player in a room
 const roomScores = {};//stres the room scores of wach player
+
+function setCurrentScores0(roomName) {
+    Object.keys(currentScore[roomName]).forEach((key) => {
+        currentScore[roomName][key] = 0;
+    })
+}
+function checkIfAllPlayersGuessed(roomName) {
+    let count = 0;
+    Object.keys(currentScore[roomName]).forEach((key) => {
+        if (currentScore[roomName][key] === 1) {
+            count++;
+        }
+    })
+    return count == Object.keys(currentScore[roomName]).length-1; //one of them are drawing
+}
+
 /*
 {
     roomName : {
@@ -108,6 +124,7 @@ exports.socketController = () => {
             //if game is active
             if(roomGameEngine[assignedRoom]['isGameActive'] === true && rooms[assignedRoom].length === 2){
                 //initilizing game
+                setCurrentScores0(assignedRoom);    
                 socket.to(assignedRoom).emit('gamemessage',`Game has started in ${assignedRoom}`);
                 roomGameEngine[assignedRoom]['currentTurn'] = usernamesbyRoom[assignedRoom][0];
                 roomGameEngine[assignedRoom]['roomMembers'] = usernamesbyRoom[assignedRoom];
@@ -129,6 +146,7 @@ exports.socketController = () => {
                 // io.to(assignedRoom).emit('gameEngineData',roomGameEngine[assignedRoom]);
                 //Continueing game
                 socket.on('timeoutForSocket',(datafromclient)=>{
+                    setCurrentScores0(assignedRoom);    
                     var json = JSON.parse(datafromclient);
                     // console.log(`Socket timeout:${json.currentTurn}`);
                     roomGameEngine[assignedRoom]['currentTurn'] = usernamesbyRoom[assignedRoom][(usernamesbyRoom[assignedRoom].indexOf(json.currentTurn) + 1) % usernamesbyRoom[assignedRoom].length];
@@ -162,10 +180,21 @@ exports.socketController = () => {
                 //guessedWord
                 socket.on('correctguess',(datafromclient)=>{
                 var username = JSON.parse(datafromclient)["username"];
-                currentScore[assignedRoom][username] +=  10;
+                currentScore[assignedRoom][username] =  1;
                 roomScores[assignedRoom][username] += 10;
                 io.to(assignedRoom).emit("wordGuessedBySocket", username);
                 io.to(assignedRoom).emit('scoreupdate',roomScores[assignedRoom]);
+                if(checkIfAllPlayersGuessed(assignedRoom)){
+                    setCurrentScores0(assignedRoom);
+                    roomGameEngine[assignedRoom]['currentTurn'] = usernamesbyRoom[assignedRoom][(usernamesbyRoom[assignedRoom].indexOf(roomGameEngine[assignedRoom]['currentTurn']) + 1) % usernamesbyRoom[assignedRoom].length];
+                    roomGameEngine[assignedRoom]['roomMembers'] = usernamesbyRoom[assignedRoom];
+                    io.to(assignedRoom).emit('sendWordChoices',{
+                        currentTurn : roomGameEngine[assignedRoom]['currentTurn'],
+                        wordChoices : [getrandom(),getrandom(),getrandom()]
+                    });
+                    io.to(assignedRoom).emit('resetTimeOut',`All players guessed`);
+
+                }
                 console.log(roomScores);
             });
             //disconnect
